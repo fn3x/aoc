@@ -1,4 +1,5 @@
 const std = @import("std");
+const data_structures = @import("ds.zig");
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
@@ -17,6 +18,15 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
     defer alloc.free(buffer);
 
     _ = try file.readAll(buffer);
+
+    var tree = data_structures.BinaryTree.init(alloc);
+    defer tree.deinit();
+
+    try tree.insert(1);
+    try tree.insert(5);
+    try tree.insert(2);
+    try tree.insert(3);
+    try tree.traverse();
 
     return 0;
 }
