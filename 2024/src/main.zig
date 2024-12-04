@@ -19,14 +19,16 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
 
     _ = try file.readAll(buffer);
 
-    var tree = data_structures.BinaryTree.init(alloc);
-    defer tree.deinit();
+    var tree = data_structures.BinaryTree.init();
+    defer tree.deinit(alloc);
 
-    try tree.insert(1);
-    try tree.insert(5);
-    try tree.insert(2);
-    try tree.insert(3);
+    try tree.insert(alloc, 1);
+    try tree.insert(alloc, 5);
+    try tree.insert(alloc, 2);
+    try tree.insert(alloc, 3);
     try tree.traverse();
 
+    std.log.info("has 2: {}", .{ tree.lookup(2) });
+    std.log.info("has 3: {}", .{ tree.lookup(3) });
     return 0;
 }

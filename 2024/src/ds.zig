@@ -1,5 +1,5 @@
 const std = @import("std");
-pub const Error = error{OutOfMemory};
+pub const Error = error{ OutOfMemory, NoSpaceLeft };
 
 pub const CharStack = struct {
     alloc: std.mem.Allocator,
@@ -36,7 +36,12 @@ const Node = struct {
     right: ?*Node,
 
     pub fn init(allocator: std.mem.Allocator) Error!*Node {
-        return allocator.create(Node);
+        const node = try allocator.create(Node);
+        node.left = null;
+        node.right = null;
+        node.height = 1;
+        node.key = 0;
+        return node;
     }
 
     pub fn deinit(self: *Node, allocator: std.mem.Allocator) void {
@@ -93,9 +98,7 @@ const Node = struct {
             }
         } else {
             if (self.right) |right| {
-                if (node.key > right.key) {
-                    right.insert(node);
-                }
+                right.insert(node);
             } else {
                 node.height = self.height + 1;
                 self.right = node;
@@ -103,42 +106,41 @@ const Node = struct {
         }
     }
 
-    pub fn traverse(self: *Node, allocator: std.mem.Allocator) Error!void {
-        const indentation = std.ArrayList([]u8).init(allocator);
-        defer indentation.deinit();
-
-        for (0..(self.height / 2) + 1) |_| {
-            try indentation.appendSlice("    ");
-        }
-
+    pub fn traverse(self: *Node) Error!void {
         if (self.left) |left| {
             try left.traverse();
-            std.debug.print(indentation.items[0..indentation.len - 2] + "/\n");
+
+            var indent_value = [_]u8{'\\'};
+            try indent((self.height / 2) - 1, &indent_value);
         }
 
         if (self.right) |right| {
             try right.traverse();
-            std.debug.print(indentation.items + "\\\n");
+
+            var indent_value = [_]u8{'/'};
+            try indent((self.height / 2) + 1, &indent_value);
         }
 
-        std.debug.print(indentation.items + "%d\n", self.key);
+        var buffer: [20]u8 = undefined;
+
+        _ = std.fmt.formatIntBuf(buffer[0..], self.key, 10, .lower, .{ .alignment = .left });
+
+        try indent(self.height / 2, buffer[0..]);
     }
 };
 
 pub const BinaryTree = struct {
     root: ?*Node = null,
-    allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) BinaryTree {
+    pub fn init() BinaryTree {
         return BinaryTree{
             .root = null,
-            .allocator = allocator,
         };
     }
 
-    pub fn deinit(self: *BinaryTree) void {
+    pub fn deinit(self: *BinaryTree, allocator: std.mem.Allocator) void {
         if (self.root) |node| {
-            node.deinit(self.allocator);
+            node.deinit(allocator);
         }
     }
 
@@ -150,8 +152,9 @@ pub const BinaryTree = struct {
         return false;
     }
 
-    pub fn insert(self: *BinaryTree, key: u32) !void {
-        const node = try Node.init(self.allocator);
+    pub fn insert(self: *BinaryTree, allocator: std.mem.Allocator, key: u32) !void {
+        std.log.info("inserting key {d}", .{key});
+        const node = try Node.init(allocator);
         node.key = key;
         if (self.root) |root| {
             root.insert(node);
@@ -163,13 +166,24 @@ pub const BinaryTree = struct {
 
     pub fn traverse(self: *BinaryTree) Error!void {
         if (self.root) |root| {
-            try root.traverse(self.allocator);
+            try root.traverse();
         }
     }
 };
 
-fn indent(spaces: usize) void {
-    for (0..spaces) |_| {
-        std.log.info("    ");
+fn indent(spaces: usize, string: []u8) Error!void {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.child_allocator;
+
+    const charToRepeat: u8 = ' ';
+
+    const buffer = try allocator.alloc(u8, spaces);
+    defer allocator.free(buffer);
+
+    for (buffer) |*byte| {
+        byte.* = charToRepeat;
     }
+
+    std.log.info("{s}{s}", .{ buffer, string });
 }
