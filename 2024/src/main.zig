@@ -1,5 +1,6 @@
 const std = @import("std");
 const data_structures = @import("ds.zig");
+const RndGen = std.crypto.random;
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
@@ -21,14 +22,17 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
 
     var tree = data_structures.BinaryTree.init();
     defer tree.deinit(alloc);
+    var min: u32 = undefined;
 
-    try tree.insert(alloc, 1);
-    try tree.insert(alloc, 5);
-    try tree.insert(alloc, 2);
-    try tree.insert(alloc, 3);
-    try tree.traverse();
+    for (0..100_000) |_| {
+        const rand = RndGen.int(u32);
+        if (rand < min) {
+            min = rand;
+        }
+        try tree.insert(alloc, rand);
+    }
 
-    std.log.info("has 2: {}", .{ tree.lookup(2) });
-    std.log.info("has 3: {}", .{ tree.lookup(3) });
+    std.log.info("min: {d}", .{ tree.min() });
+    std.log.info("actual min: {d}", .{ min });
     return 0;
 }

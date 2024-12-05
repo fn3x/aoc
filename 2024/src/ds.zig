@@ -106,26 +106,12 @@ const Node = struct {
         }
     }
 
-    pub fn traverse(self: *Node) Error!void {
+    pub fn min(self: *Node) u32 {
         if (self.left) |left| {
-            try left.traverse();
-
-            var indent_value = [_]u8{'\\'};
-            try indent((self.height / 2) - 1, &indent_value);
+            return left.min();
+        } else {
+            return self.key;
         }
-
-        if (self.right) |right| {
-            try right.traverse();
-
-            var indent_value = [_]u8{'/'};
-            try indent((self.height / 2) + 1, &indent_value);
-        }
-
-        var buffer: [20]u8 = undefined;
-
-        _ = std.fmt.formatIntBuf(buffer[0..], self.key, 10, .lower, .{ .alignment = .left });
-
-        try indent(self.height / 2, buffer[0..]);
     }
 };
 
@@ -152,8 +138,15 @@ pub const BinaryTree = struct {
         return false;
     }
 
+    pub fn min(self: *BinaryTree) u32 {
+        if (self.root) |root| {
+            return root.min();
+        }
+
+        return 0;
+    }
+
     pub fn insert(self: *BinaryTree, allocator: std.mem.Allocator, key: u32) !void {
-        std.log.info("inserting key {d}", .{key});
         const node = try Node.init(allocator);
         node.key = key;
         if (self.root) |root| {
@@ -163,27 +156,4 @@ pub const BinaryTree = struct {
             self.root = node;
         }
     }
-
-    pub fn traverse(self: *BinaryTree) Error!void {
-        if (self.root) |root| {
-            try root.traverse();
-        }
-    }
 };
-
-fn indent(spaces: usize, string: []u8) Error!void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.child_allocator;
-
-    const charToRepeat: u8 = ' ';
-
-    const buffer = try allocator.alloc(u8, spaces);
-    defer allocator.free(buffer);
-
-    for (buffer) |*byte| {
-        byte.* = charToRepeat;
-    }
-
-    std.log.info("{s}{s}", .{ buffer, string });
-}
