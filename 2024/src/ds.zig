@@ -118,10 +118,11 @@ pub fn BinaryTree(comptime T: type) type {
         };
 
         root: ?*Node = null,
+        allocator: std.mem.Allocator,
 
-        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *@This()) void {
             if (self.root) |node| {
-                node.deinit(allocator);
+                node.deinit(self.allocator);
             }
         }
 
@@ -141,8 +142,8 @@ pub fn BinaryTree(comptime T: type) type {
             return 0;
         }
 
-        pub fn insert(self: *@This(), allocator: std.mem.Allocator, key: T) !void {
-            const node = try Node.init(allocator, key);
+        pub fn insert(self: *@This(), key: T) !void {
+            const node = try Node.init(self.allocator, key);
             if (self.root) |root| {
                 root.insert(node);
             } else {

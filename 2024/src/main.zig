@@ -20,8 +20,8 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
 
     _ = try file.readAll(buffer);
 
-    var tree = data_structures.BinaryTree(u32){};
-    defer tree.deinit(alloc);
+    var tree = data_structures.BinaryTree(u32){ .allocator = alloc };
+    defer tree.deinit();
     var min: u32 = undefined;
 
     for (0..100_000) |_| {
@@ -29,7 +29,7 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
         if (rand < min) {
             min = rand;
         }
-        try tree.insert(alloc, rand);
+        try tree.insert(rand);
     }
 
     std.log.info("min: {d}", .{ tree.min() });
