@@ -29,131 +29,125 @@ pub const CharStack = struct {
     }
 };
 
-const Node = struct {
-    key: u32,
-    height: u32 = 1,
-    left: ?*Node,
-    right: ?*Node,
+pub fn BinaryTree(comptime T: type) type {
+    return struct {
+        const Node = struct {
+            key: T,
+            height: u32 = 1,
+            left: ?*Node,
+            right: ?*Node,
 
-    pub fn init(allocator: std.mem.Allocator) Error!*Node {
-        const node = try allocator.create(Node);
-        node.left = null;
-        node.right = null;
-        node.height = 1;
-        node.key = 0;
-        return node;
-    }
-
-    pub fn deinit(self: *Node, allocator: std.mem.Allocator) void {
-        if (self.left) |left| {
-            left.deinit(allocator);
-        }
-
-        if (self.right) |right| {
-            right.deinit(allocator);
-        }
-
-        allocator.destroy(self);
-    }
-
-    pub fn isLeaf(self: *Node) bool {
-        return self.left == null and self.right == null;
-    }
-
-    pub fn lookup(self: *Node, key: u32) bool {
-        if (self.key == key) {
-            return true;
-        }
-
-        if (key < self.key) {
-            if (self.left) |left| {
-                return left.lookup(key);
+            pub fn init(allocator: std.mem.Allocator, key: T) Error!*Node {
+                const node = try allocator.create(Node);
+                node.left = null;
+                node.right = null;
+                node.height = 1;
+                node.key = key;
+                return node;
             }
 
-            return false;
-        }
+            pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+                if (self.left) |left| {
+                    left.deinit(allocator);
+                }
 
-        if (key > self.key) {
-            if (self.right) |right| {
-                return right.lookup(key);
+                if (self.right) |right| {
+                    right.deinit(allocator);
+                }
+
+                allocator.destroy(self);
             }
 
-            return false;
-        }
-
-        return false;
-    }
-
-    pub fn insert(self: *Node, node: *Node) void {
-        if (self.key == node.key) {
-            return;
-        }
-
-        if (node.key < self.key) {
-            if (self.left) |left| {
-                left.insert(node);
-            } else {
-                node.height = self.height + 1;
-                self.left = node;
+            pub fn isLeaf(self: *@This()) bool {
+                return self.left == null and self.right == null;
             }
-        } else {
-            if (self.right) |right| {
-                right.insert(node);
-            } else {
-                node.height = self.height + 1;
-                self.right = node;
+
+            pub fn lookup(self: *Node, key: T) bool {
+                if (self.key == key) {
+                    return true;
+                }
+
+                if (key < self.key) {
+                    if (self.left) |left| {
+                        return left.lookup(key);
+                    }
+
+                    return false;
+                }
+
+                if (key > self.key) {
+                    if (self.right) |right| {
+                        return right.lookup(key);
+                    }
+
+                    return false;
+                }
+
+                return false;
             }
-        }
-    }
 
-    pub fn min(self: *Node) u32 {
-        if (self.left) |left| {
-            return left.min();
-        } else {
-            return self.key;
-        }
-    }
-};
+            pub fn insert(self: *Node, node: *Node) void {
+                if (self.key == node.key) {
+                    return;
+                }
 
-pub const BinaryTree = struct {
-    root: ?*Node = null,
+                if (node.key < self.key) {
+                    if (self.left) |left| {
+                        left.insert(node);
+                    } else {
+                        node.height = self.height + 1;
+                        self.left = node;
+                    }
+                } else {
+                    if (self.right) |right| {
+                        right.insert(node);
+                    } else {
+                        node.height = self.height + 1;
+                        self.right = node;
+                    }
+                }
+            }
 
-    pub fn init() BinaryTree {
-        return BinaryTree{
-            .root = null,
+            pub fn min(self: *Node) u32 {
+                if (self.left) |left| {
+                    return left.min();
+                } else {
+                    return self.key;
+                }
+            }
         };
-    }
 
-    pub fn deinit(self: *BinaryTree, allocator: std.mem.Allocator) void {
-        if (self.root) |node| {
-            node.deinit(allocator);
-        }
-    }
+        root: ?*Node = null,
 
-    pub fn lookup(self: *BinaryTree, key: u32) bool {
-        if (self.root) |root| {
-            return root.lookup(key);
+        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+            if (self.root) |node| {
+                node.deinit(allocator);
+            }
         }
 
-        return false;
-    }
+        pub fn lookup(self: *@This(), key: T) bool {
+            if (self.root) |root| {
+                return root.lookup(key);
+            }
 
-    pub fn min(self: *BinaryTree) u32 {
-        if (self.root) |root| {
-            return root.min();
+            return false;
         }
 
-        return 0;
-    }
+        pub fn min(self: *@This()) T {
+            if (self.root) |root| {
+                return root.min();
+            }
 
-    pub fn insert(self: *BinaryTree, allocator: std.mem.Allocator, key: u32) !void {
-        const node = try Node.init(allocator);
-        node.key = key;
-        if (self.root) |root| {
-            root.insert(node);
-        } else {
-            node.key = key;
-            self.root = node;
+            return 0;
         }
-    }
-};
+
+        pub fn insert(self: *@This(), allocator: std.mem.Allocator, key: T) !void {
+            const node = try Node.init(allocator, key);
+            if (self.root) |root| {
+                root.insert(node);
+            } else {
+                self.root = node;
+            }
+        }
+    };
+}

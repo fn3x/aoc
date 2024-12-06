@@ -20,7 +20,7 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
 
     _ = try file.readAll(buffer);
 
-    var tree = data_structures.BinaryTree.init();
+    var tree = data_structures.BinaryTree(u32){};
     defer tree.deinit(alloc);
     var min: u32 = undefined;
 
