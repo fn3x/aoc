@@ -1,5 +1,5 @@
 const std = @import("std");
-pub const Error = error{ OutOfMemory, NoSpaceLeft };
+pub const Error = error{ OutOfMemory, NoSpaceLeft, AllocatorError };
 
 pub const CharStack = struct {
     alloc: std.mem.Allocator,
@@ -115,6 +115,18 @@ pub fn BinaryTree(comptime T: type) type {
                     return self.key;
                 }
             }
+
+            pub fn sortAsc(self: *Node, result: *std.ArrayList(T)) Error!void {
+                if (self.left) |left| {
+                    try left.sortAsc(result);
+                }
+
+                try result.append(self.key);
+
+                if (self.right) |right| {
+                    try right.sortAsc(result);
+                }
+            }
         };
 
         root: ?*Node = null,
@@ -134,12 +146,10 @@ pub fn BinaryTree(comptime T: type) type {
             return false;
         }
 
-        pub fn min(self: *@This()) T {
+        pub fn sortAsc(self: *@This(), sorted: *std.ArrayList(T)) !void {
             if (self.root) |root| {
-                return root.min();
+                try root.sortAsc(sorted);
             }
-
-            return 0;
         }
 
         pub fn insert(self: *@This(), key: T) !void {

@@ -12,27 +12,35 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
     const file = try std.fs.cwd().openFile(input_path, .{});
     defer file.close();
 
-    const file_stat = try file.stat();
-    const file_size = file_stat.size;
+    var buf_reader = std.io.bufferedReader(file.reader());
+    const reader = buf_reader.reader();
 
-    const buffer: []u8 = try alloc.alloc(u8, file_size);
-    defer alloc.free(buffer);
+    var tree_left = data_structures.BinaryTree(u32){ .allocator = alloc };
+    defer tree_left.deinit();
 
-    _ = try file.readAll(buffer);
+    var tree_right = data_structures.BinaryTree(u32){ .allocator = alloc };
+    defer tree_right.deinit();
 
-    var tree = data_structures.BinaryTree(u32){ .allocator = alloc };
-    defer tree.deinit();
-    var min: u32 = undefined;
+    var line = std.ArrayList(u8).init(alloc);
+    defer line.deinit();
 
-    for (0..100_000) |_| {
-        const rand = RndGen.int(u32);
-        if (rand < min) {
-            min = rand;
+    const line_writer = line.writer();
+
+    while (reader.streamUntilDelimiter(line_writer, '\n')) {
+        defer line.clearRetainingCapacity();
+        var splits = std.mem.splitSequence(u8, line.items, " ");
+        var i: usize = 0;
+        while (splits.next()) |num|: (i += 1) {
+            _ = num;
+            if (i == 0) {
+                tree_left.insert();
+            }
         }
-        try tree.insert(rand);
     }
 
-    std.log.info("min: {d}", .{ tree.min() });
-    std.log.info("actual min: {d}", .{ min });
+    var sorted = std.ArrayList(u32).init(alloc);
+    defer sorted.deinit();
+
+    std.log.info("sorted: {any}", .{ sorted.items });
     return 0;
 }
