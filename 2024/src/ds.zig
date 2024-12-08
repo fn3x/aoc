@@ -33,6 +33,7 @@ pub fn BinaryTree(comptime T: type) type {
     return struct {
         const Node = struct {
             key: T,
+            num_of_duplicates: u32 = 0,
             height: u32 = 1,
             left: ?*Node,
             right: ?*Node,
@@ -42,6 +43,7 @@ pub fn BinaryTree(comptime T: type) type {
                 node.left = null;
                 node.right = null;
                 node.height = 1;
+                node.num_of_duplicates = 0;
                 node.key = key;
                 return node;
             }
@@ -88,6 +90,7 @@ pub fn BinaryTree(comptime T: type) type {
 
             pub fn insert(self: *Node, node: *Node) void {
                 if (self.key == node.key) {
+                    self.num_of_duplicates += 1;
                     return;
                 }
 
@@ -122,10 +125,26 @@ pub fn BinaryTree(comptime T: type) type {
                 }
 
                 try result.append(self.key);
+                for (0..self.num_of_duplicates) |_| {
+                    try result.append(self.key);
+                }
 
                 if (self.right) |right| {
                     try right.sortAsc(result);
                 }
+            }
+
+            pub fn countChildren(self: *Node) u32 {
+                var num_children: u32 = 0;
+                if (self.left) |left| {
+                    num_children += left.countChildren();
+                }
+
+                if (self.right) |right| {
+                    num_children += right.countChildren();
+                }
+
+                return num_children + 1;
             }
         };
 
@@ -149,6 +168,14 @@ pub fn BinaryTree(comptime T: type) type {
         pub fn sortAsc(self: *@This(), sorted: *std.ArrayList(T)) !void {
             if (self.root) |root| {
                 try root.sortAsc(sorted);
+            }
+        }
+
+        pub fn count(self: *@This()) u32 {
+            if (self.root) |root| {
+                return root.countChildren();
+            } else {
+                return 0;
             }
         }
 

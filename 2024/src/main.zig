@@ -4,43 +4,51 @@ const RndGen = std.crypto.random;
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
-    const day1_1_result = try day1Of1(alloc, "src/1_1");
-    std.debug.print("day 1 result: {d}\n", .{day1_1_result});
+    try day1Of1(alloc, "src/1_1");
 }
 
-pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !i32 {
+pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
     const file = try std.fs.cwd().openFile(input_path, .{});
     defer file.close();
 
     var buf_reader = std.io.bufferedReader(file.reader());
     const reader = buf_reader.reader();
 
-    var tree_left = data_structures.BinaryTree(u32){ .allocator = alloc };
+    var tree_left = data_structures.BinaryTree(isize){ .allocator = alloc };
     defer tree_left.deinit();
 
-    var tree_right = data_structures.BinaryTree(u32){ .allocator = alloc };
+    var tree_right = data_structures.BinaryTree(isize){ .allocator = alloc };
     defer tree_right.deinit();
+    var buf: [1024]u8 = undefined;
 
-    var line = std.ArrayList(u8).init(alloc);
-    defer line.deinit();
-
-    const line_writer = line.writer();
-
-    while (reader.streamUntilDelimiter(line_writer, '\n')) {
-        defer line.clearRetainingCapacity();
-        var splits = std.mem.splitSequence(u8, line.items, " ");
+    while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        var splits = std.mem.splitSequence(u8, line, "   ");
         var i: usize = 0;
-        while (splits.next()) |num|: (i += 1) {
-            _ = num;
+        while (splits.next()) |num| : (i += 1) {
+            const key = try std.fmt.parseInt(isize, num, 10);
             if (i == 0) {
-                tree_left.insert();
+                try tree_left.insert(key);
+            } else {
+                try tree_right.insert(key);
             }
         }
     }
 
-    var sorted = std.ArrayList(u32).init(alloc);
-    defer sorted.deinit();
+    var left_sorted = std.ArrayList(isize).init(alloc);
+    defer left_sorted.deinit();
 
-    std.log.info("sorted: {any}", .{ sorted.items });
-    return 0;
+    try tree_left.sortAsc(&left_sorted);
+
+    var right_sorted = std.ArrayList(isize).init(alloc);
+    defer right_sorted.deinit();
+
+    try tree_right.sortAsc(&right_sorted);
+
+    var result: isize = 0;
+
+    for (left_sorted.items, right_sorted.items) |left, right| {
+        result += @intCast(@abs(left - right));
+    }
+    
+    std.log.info("day 1 of 1: {d}", .{result});
 }
