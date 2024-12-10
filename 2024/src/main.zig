@@ -4,12 +4,12 @@ const RndGen = std.crypto.random;
 
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
-    try day1Of1(alloc, "src/1_1");
-    try day2Of1(alloc, "src/2");
+
+    try day1(alloc, "src/1_1");
+    try day2Of1("src/2");
 }
 
-fn day2Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
-    _ = alloc;
+fn day2Of1(input_path: []const u8) !void {
     const file = try std.fs.cwd().openFile(input_path, .{});
     defer file.close();
 
@@ -65,10 +65,10 @@ fn day2Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
         safe_reports += 1;
     }
 
-    std.log.info("safe reports: {d}", .{safe_reports});
+    std.log.info("d2p1:: safe reports: {d}", .{safe_reports});
 }
 
-fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
+fn day1(alloc: std.mem.Allocator, input_path: []const u8) !void {
     const file = try std.fs.cwd().openFile(input_path, .{});
     defer file.close();
 
@@ -112,7 +112,7 @@ fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
         result += abs_diff;
     }
 
-    std.log.info("day 1 of 1: {d}", .{result});
+    std.log.info("d1p1:: total distance: {d}", .{result});
 
     var iterator = tree_left.newIterator();
     defer iterator.deinit();
@@ -123,5 +123,5 @@ fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
         similarity_score += node.key * tree_right.lookup(node.key);
     }
 
-    std.log.info("day 1 of 2: {d}", .{similarity_score});
+    std.log.info("d1p2:: similarity score: {d}", .{similarity_score});
 }
