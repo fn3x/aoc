@@ -3,7 +3,7 @@ pub const Error = error{ OutOfMemory, NoSpaceLeft, AllocatorError };
 
 pub const CharStack = struct {
     alloc: std.mem.Allocator,
-    values: []usize = .{},
+    values: []usize = undefined,
 
     fn deinit(self: *CharStack) void {
         self.alloc.free(self.values);
@@ -61,11 +61,26 @@ pub fn BinaryTree(comptime T: type) type {
             }
 
             const NodeIterator = struct {
-                root: ?*Node,
-                current_node: ?*Node = undefined,
+                stack: std.ArrayList(*Node) = undefined,
+
+                pub fn init(allocator: std.mem.Allocator) NodeIterator {
+                    return NodeIterator{ .stack = std.ArrayList(*Node).init(allocator) };
+                }
+
+                pub fn deinit(self: *NodeIterator) void {
+                    self.stack.deinit();
+                }
+
+                pub fn pushLeft(self: *NodeIterator, node: *Node) Error!void {
+                    var current_node: ?*Node = node;
+                    while (current_node) |current| {
+                        try self.stack.append(current);
+                        current_node = current.left;
+                    }
+                }
 
                 pub fn countOccurrences(self: *NodeIterator, key: T) usize {
-                    while (self.next()) |node| {
+                    while (try self.next()) |node| {
                         if (node.key == key) {
                             return @intCast(1 + node.num_of_duplicates);
                         }
@@ -74,29 +89,17 @@ pub fn BinaryTree(comptime T: type) type {
                     return 0;
                 }
 
-                pub fn next(self: *NodeIterator) ?*Node {
-                    if (self.current_node) |cur| {
-                        if (cur.left) |left| {
-                            self.current_node = left;
-                            return left;
-                        }
-
-                        if (cur.right) |right| {
-                            self.current_node = right;
-                            return right;
-                        }
-                    } else {
-                        if (self.root) |root| {
-                            self.current_node = root;
-                            return root;
-                        }
+                pub fn next(self: *NodeIterator) Error!?*Node {
+                    if (self.stack.items.len == 0) {
+                        return null;
                     }
 
-                    return null;
-                }
+                    const node = self.stack.pop();
+                    if (node.right) |right| {
+                        try self.pushLeft(right);
+                    }
 
-                pub fn reset(self: *@This()) void {
-                    self.current_node = null;
+                    return node;
                 }
             };
 
@@ -105,7 +108,7 @@ pub fn BinaryTree(comptime T: type) type {
             }
 
             // @returns number of times the key appears
-            pub fn lookup(self: *Node, key: T) u32 {
+            pub fn lookup(self: *Node, key: T) usize {
                 if (self.key == key) {
                     return self.num_of_duplicates + 1;
                 }
@@ -185,12 +188,12 @@ pub fn BinaryTree(comptime T: type) type {
             }
         }
 
-        pub fn lookup(self: *@This(), key: T) bool {
+        pub fn lookup(self: *@This(), key: T) usize {
             if (self.root) |root| {
                 return root.lookup(key);
             }
 
-            return false;
+            return 0;
         }
 
         pub fn sortAsc(self: *@This(), sorted: *std.ArrayList(T)) !void {
@@ -209,7 +212,9 @@ pub fn BinaryTree(comptime T: type) type {
         }
 
         pub fn newIterator(self: *@This()) Node.NodeIterator {
-            return Node.NodeIterator{ .root = self.root };
+            var iterator: Node.NodeIterator = Node.NodeIterator.init(self.allocator);
+            iterator.pushLeft(self.root.?) catch unreachable;
+            return iterator;
         }
 
         pub fn compare(self: *@This(), other: *@This()) usize {
