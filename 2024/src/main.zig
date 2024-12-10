@@ -5,9 +5,65 @@ const RndGen = std.crypto.random;
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
     try day1Of1(alloc, "src/1_1");
+    try day2Of1(alloc, "src/2");
 }
 
-pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
+fn day2Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
+    _ = alloc;
+    const file = try std.fs.cwd().openFile(input_path, .{});
+    defer file.close();
+
+    var buf_reader = std.io.bufferedReader(file.reader());
+    const reader = buf_reader.reader();
+
+    var safe_reports: usize = 0;
+    var buf: [1024]u8 = undefined;
+    outer: while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        var reports = std.mem.splitSequence(u8, line, " ");
+
+        var previous_report = try std.fmt.parseInt(usize, reports.first(), 10);
+        var current_report = try std.fmt.parseInt(usize, reports.next().?, 10);
+
+        if (current_report == previous_report) {
+            continue;
+        }
+
+        if (current_report > previous_report and current_report - previous_report > 3) {
+            continue;
+        }
+
+        if (current_report < previous_report and previous_report - current_report > 3) {
+            continue;
+        }
+
+        const increasing: bool = current_report > previous_report;
+
+        while (reports.next()) |num| : (previous_report = current_report) {
+            current_report = try std.fmt.parseInt(usize, num, 10);
+
+            if (current_report == previous_report) {
+                continue :outer;
+            }
+
+            if (current_report < previous_report and increasing) {
+                continue :outer;
+            }
+
+            if (current_report > previous_report and current_report - previous_report > 3) {
+                continue :outer;
+            }
+
+            if (current_report < previous_report and previous_report - current_report > 3) {
+                continue :outer;
+            }
+        }
+        safe_reports += 1;
+    }
+
+    std.log.info("safe reports: {d}", .{safe_reports});
+}
+
+fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
     const file = try std.fs.cwd().openFile(input_path, .{});
     defer file.close();
 
