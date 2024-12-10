@@ -21,7 +21,7 @@ fn day2Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
     outer: while (try reader.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         var reports = std.mem.splitSequence(u8, line, " ");
 
-        var previous_report = try std.fmt.parseInt(usize, reports.first(), 10);
+        var previous_report = try std.fmt.parseInt(usize, reports.next().?, 10);
         var current_report = try std.fmt.parseInt(usize, reports.next().?, 10);
 
         if (current_report == previous_report) {
@@ -38,7 +38,8 @@ fn day2Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
 
         const increasing: bool = current_report > previous_report;
 
-        while (reports.next()) |num| : (previous_report = current_report) {
+        while (reports.next()) |num| {
+            previous_report = current_report;
             current_report = try std.fmt.parseInt(usize, num, 10);
 
             if (current_report == previous_report) {
@@ -46,6 +47,10 @@ fn day2Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
             }
 
             if (current_report < previous_report and increasing) {
+                continue :outer;
+            }
+
+            if (current_report > previous_report and !increasing) {
                 continue :outer;
             }
 
