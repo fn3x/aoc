@@ -60,13 +60,54 @@ pub fn BinaryTree(comptime T: type) type {
                 allocator.destroy(self);
             }
 
-            pub fn isLeaf(self: *@This()) bool {
+            const NodeIterator = struct {
+                root: ?*Node,
+                current_node: ?*Node = undefined,
+
+                pub fn countOccurrences(self: *NodeIterator, key: T) usize {
+                    while (self.next()) |node| {
+                        if (node.key == key) {
+                            return @intCast(1 + node.num_of_duplicates);
+                        }
+                    }
+
+                    return 0;
+                }
+
+                pub fn next(self: *NodeIterator) ?*Node {
+                    if (self.current_node) |cur| {
+                        if (cur.left) |left| {
+                            self.current_node = left;
+                            return left;
+                        }
+
+                        if (cur.right) |right| {
+                            self.current_node = right;
+                            return right;
+                        }
+                    } else {
+                        if (self.root) |root| {
+                            self.current_node = root;
+                            return root;
+                        }
+                    }
+
+                    return null;
+                }
+
+                pub fn reset(self: *@This()) void {
+                    self.current_node = null;
+                }
+            };
+
+            pub fn isLeaf(self: *Node) bool {
                 return self.left == null and self.right == null;
             }
 
-            pub fn lookup(self: *Node, key: T) bool {
+            // @returns number of times the key appears
+            pub fn lookup(self: *Node, key: T) u32 {
                 if (self.key == key) {
-                    return true;
+                    return self.num_of_duplicates + 1;
                 }
 
                 if (key < self.key) {
@@ -74,7 +115,7 @@ pub fn BinaryTree(comptime T: type) type {
                         return left.lookup(key);
                     }
 
-                    return false;
+                    return 0;
                 }
 
                 if (key > self.key) {
@@ -82,10 +123,10 @@ pub fn BinaryTree(comptime T: type) type {
                         return right.lookup(key);
                     }
 
-                    return false;
+                    return 0;
                 }
 
-                return false;
+                return 0;
             }
 
             pub fn insert(self: *Node, node: *Node) void {
@@ -133,19 +174,6 @@ pub fn BinaryTree(comptime T: type) type {
                     try right.sortAsc(result);
                 }
             }
-
-            pub fn countChildren(self: *Node) u32 {
-                var num_children: u32 = 0;
-                if (self.left) |left| {
-                    num_children += left.countChildren();
-                }
-
-                if (self.right) |right| {
-                    num_children += right.countChildren();
-                }
-
-                return num_children + 1;
-            }
         };
 
         root: ?*Node = null,
@@ -171,14 +199,6 @@ pub fn BinaryTree(comptime T: type) type {
             }
         }
 
-        pub fn count(self: *@This()) u32 {
-            if (self.root) |root| {
-                return root.countChildren();
-            } else {
-                return 0;
-            }
-        }
-
         pub fn insert(self: *@This(), key: T) !void {
             const node = try Node.init(self.allocator, key);
             if (self.root) |root| {
@@ -186,6 +206,24 @@ pub fn BinaryTree(comptime T: type) type {
             } else {
                 self.root = node;
             }
+        }
+
+        pub fn newIterator(self: *@This()) Node.NodeIterator {
+            return Node.NodeIterator{ .root = self.root };
+        }
+
+        pub fn compare(self: *@This(), other: *@This()) usize {
+            var sum: usize = 0;
+
+            if (self.root) |root| {
+                sum += 1;
+                if (other.root) |otherRoot| {
+                    _ = otherRoot;
+                    _ = root;
+                }
+            }
+
+            return sum;
         }
     };
 }

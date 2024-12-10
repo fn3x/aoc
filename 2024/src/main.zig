@@ -51,4 +51,7 @@ pub fn day1Of1(alloc: std.mem.Allocator, input_path: []const u8) !void {
     }
     
     std.log.info("day 1 of 1: {d}", .{result});
+
+    var iterator = tree_left.newIterator();
+    std.log.info("the number {d} occurs {d} times", .{ 15000, iterator.countOccurrences(15000) });
 }
