@@ -5,7 +5,7 @@ const RndGen = std.crypto.random;
 pub fn main() !void {
     const alloc = std.heap.page_allocator;
 
-    try day1(alloc, "src/1_1");
+    try day1(alloc, "src/1");
     try day2Of1("src/2");
     try day2Of2(alloc, "src/2");
 }
