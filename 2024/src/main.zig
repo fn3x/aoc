@@ -10,6 +10,59 @@ pub fn main() !void {
     try day2Of2(alloc, "src/2");
 }
 
+fn day3Of1(allocator: std.mem.Allocator, input_path: []const u8) !void {
+    const file = try std.fs.cwd().openFile(input_path, .{});
+    defer file.close();
+
+    var buf_reader = std.io.bufferedReader(file.reader());
+    const reader = buf_reader.reader();
+
+    var buf: [2048]u8 = undefined;
+
+    var container = std.ArrayList(usize).init(allocator);
+    defer container.deinit();
+    _ = try reader.readAll(&buf, '\n');
+
+    const stack = std.ArrayList(u8).init(allocator);
+    defer stack.deinit();
+
+    for (buf) |char| {
+        switch (char) {
+            'm' => {
+                stack.clearRetainingCapacity();
+                try stack.append(char);
+            },
+            'u' => {
+                if (stack.popOrNull()) |top| {
+                    if (top == 'm') {
+                        try stack.appendSlice("mu");
+                    } else {
+                        stack.clearRetainingCapacity();
+                    }
+                }
+            },
+            'l' => {
+                if (stack.popOrNull()) |top| {
+                    if (top == 'u') {
+                        try stack.appendSlice("mul");
+                    } else {
+                        stack.clearRetainingCapacity();
+                    }
+                }
+            },
+            '(' => {
+                if (stack.popOrNull()) |top| {
+                    if (top == 'l') {
+                        try stack.appendSlice("mul(");
+                    }
+                }
+            },
+            ')' => {},
+            else => {},
+        }
+    }
+}
+
 fn day2Of2(allocator: std.mem.Allocator, input_path: []const u8) !void {
     const file = try std.fs.cwd().openFile(input_path, .{});
     defer file.close();
