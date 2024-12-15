@@ -8,6 +8,7 @@ pub fn main() !void {
     try day1(alloc, "src/1");
     try day2Of1("src/2");
     try day2Of2(alloc, "src/2");
+    try day3Of1(alloc, "src/3");
 }
 
 fn day3Of1(allocator: std.mem.Allocator, input_path: []const u8) !void {
@@ -17,50 +18,126 @@ fn day3Of1(allocator: std.mem.Allocator, input_path: []const u8) !void {
     var buf_reader = std.io.bufferedReader(file.reader());
     const reader = buf_reader.reader();
 
-    var buf: [2048]u8 = undefined;
+    var buf: [100000]u8 = undefined;
 
     var container = std.ArrayList(usize).init(allocator);
     defer container.deinit();
-    _ = try reader.readAll(&buf, '\n');
+    _ = try reader.readAll(&buf);
 
-    const stack = std.ArrayList(u8).init(allocator);
+    var stack = std.ArrayList(u8).init(allocator);
     defer stack.deinit();
 
+    var numStack = std.ArrayList(u8).init(allocator);
+    defer numStack.deinit();
+
+    std.log.info("read from file: {s}", .{buf});
+    var first_num: usize = undefined;
+    var sum: usize = 0;
+
     for (buf) |char| {
+        std.log.info("char: {c} char stack: {s} num stack: {s}", .{
+            char,
+            stack.items,
+            numStack.items,
+        });
         switch (char) {
             'm' => {
                 stack.clearRetainingCapacity();
+                numStack.clearAndFree();
+                first_num = undefined;
                 try stack.append(char);
             },
             'u' => {
-                if (stack.popOrNull()) |top| {
-                    if (top == 'm') {
-                        try stack.appendSlice("mu");
-                    } else {
-                        stack.clearRetainingCapacity();
-                    }
+                if (std.mem.eql(u8, stack.items, "m")) {
+                    try stack.append(char);
+                } else {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
                 }
             },
             'l' => {
-                if (stack.popOrNull()) |top| {
-                    if (top == 'u') {
-                        try stack.appendSlice("mul");
-                    } else {
-                        stack.clearRetainingCapacity();
-                    }
+                if (std.mem.eql(u8, stack.items, "mu")) {
+                    try stack.append(char);
+                } else {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
                 }
             },
             '(' => {
-                if (stack.popOrNull()) |top| {
-                    if (top == 'l') {
-                        try stack.appendSlice("mul(");
-                    }
+                if (std.mem.eql(u8, stack.items, "mul")) {
+                    try stack.append(char);
+                } else {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
                 }
             },
-            ')' => {},
-            else => {},
+            ',' => {
+                if (stack.items.len == 0 or numStack.items.len == 0) {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                    continue;
+                }
+
+                if (std.mem.eql(u8, stack.items, "mul(")) {
+                    first_num = try std.fmt.parseInt(usize, numStack.items, 10);
+                    numStack.clearAndFree();
+                    try stack.append(char);
+                } else {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                }
+            },
+            ')' => {
+                if (stack.items.len == 0 or numStack.items.len == 0) {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                    continue;
+                }
+
+                if (std.mem.eql(u8, stack.items, "mul(,")) {
+                    const second_num = try std.fmt.parseInt(usize, numStack.items, 10);
+                    std.log.info("got two numbers: {d} {d}", .{ first_num, second_num });
+                    sum += first_num * second_num;
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                } else {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                }
+            },
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' => {
+                if (stack.items.len == 0) {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                    continue;
+                }
+
+                if (std.mem.eql(u8, stack.items, "mul(") or std.mem.eql(u8, stack.items, "mul(,")) {
+                    try numStack.append(char);
+                } else {
+                    stack.clearRetainingCapacity();
+                    numStack.clearAndFree();
+                    first_num = undefined;
+                }
+            },
+            else => {
+                stack.clearRetainingCapacity();
+                numStack.clearAndFree();
+                first_num = undefined;
+            },
         }
     }
+
+    std.log.info("d3p1:: sum of muls: {d}", .{sum});
 }
 
 fn day2Of2(allocator: std.mem.Allocator, input_path: []const u8) !void {
