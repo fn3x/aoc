@@ -20,6 +20,7 @@ fn day3Of2(allocator: std.mem.Allocator, input_path: []const u8) !void {
     const reader = buf_reader.reader();
 
     const file_stat = try file.stat();
+
     const buf = try allocator.alloc(u8, file_stat.size);
     defer allocator.free(buf);
 
